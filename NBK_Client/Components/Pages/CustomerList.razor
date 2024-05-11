@@ -98,7 +98,7 @@
         var response = await Http.DeleteAsync($"/customers/{customerNumber}");
         if (response.IsSuccessStatusCode)
         {
-            await FetchCustomers(); // Refresh the list after deletion
+            await FetchCustomers(); 
         }
         else
         {

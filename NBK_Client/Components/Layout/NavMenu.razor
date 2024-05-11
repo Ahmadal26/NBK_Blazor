@@ -1,39 +1,44 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
+﻿
+@inject NavigationManager NavigationManager
+
+<div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
-        <a class="navbar-brand" href="">NBK_Client</a>
+        <a class="navbar-brand" href="/">NBK_Client</a>
     </div>
 </div>
 
-<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
+<input type="checkbox" title="Navigation menu" class="navbar-toggler" id="navbar-toggler" />
+<label for="navbar-toggler" class="navbar-toggler-icon"></label>
 
-<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
+<div class="nav-scrollable">
     <nav class="flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
-            </NavLink>
-        </div>
+        <NavLink class="nav-link" href="/" Match="NavLinkMatch.All">
+            <MudIcon Icon="@Icons.Material.Filled.Home" /> Home
+        </NavLink>
         @if (!State.IsLoggedIn)
         {
-            <div class="nav-item px-3">
-                <NavLink class="nav-link" href="login">
-                    <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Login
-                </NavLink>
-            </div>
-
-            <div class="nav-item px-3">
-                <NavLink class="nav-link" href="Register">
-                    <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Register
-                </NavLink>
-            </div>
-        } else
-        {
-            <MudButton OnClick="State.RemoveToken">Logout</MudButton>
+            <NavLink class="nav-link" href="login">
+                <MudIcon Icon="@Icons.Material.Filled.Login" /> Login
+            </NavLink>
+            <NavLink class="nav-link" href="register">
+                <MudIcon Icon="@Icons.Material.Filled.PersonAdd" /> Register
+            </NavLink>
         }
-
+        else
+        {
+            <button class="btn btn-link nav-link" @onclick="Logout">
+                <MudIcon Icon="@Icons.Material.Filled.Logout" /> Logout
+            </button>
+        }
     </nav>
 </div>
 
-@code{
+@code {
     [CascadingParameter] GlobalAppState State { get; set; }
+
+    void Logout()
+    {
+        State.RemoveToken();
+        NavigationManager.NavigateTo("/", forceLoad: true); 
+    }
 }
