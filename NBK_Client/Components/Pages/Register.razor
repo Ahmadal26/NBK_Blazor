@@ -1,0 +1,77 @@
+﻿@using System.ComponentModel.DataAnnotations
+@using MudBlazor
+@using NBK_Client.Models
+@using NBK_Client.Models.Requests
+@using NBK_Client.Models.Responses
+
+@page "/register"
+<PageTitle>Register</PageTitle>
+<div style="height: 100vh;">
+    <EditForm Model="@model" OnValidSubmit="OnValidSubmit">
+        <DataAnnotationsValidator />
+        <MudCard>
+            <MudCardHeader>
+                <MudText>Register</MudText>
+            </MudCardHeader>
+            <MudCardContent>
+                <MudTextField Label="Email" @bind-Value="model.Email" Required />
+                <MudTextField Label="Password" HelperText="Choose a strong password" Class="mt-3"
+                              @bind-Value="model.Password" InputType="InputType.Password" Required />
+          
+                @if (IsShown)
+                {
+                    <MudAlert Severity="Severity.Error" ContentAlignment="HorizontalAlignment.Center"
+                              ShowCloseIcon="true" CloseIconClicked="CloseMe">
+                        Registration error: @ErrorMessage
+                    </MudAlert>
+                }
+            </MudCardContent>
+            <MudCardActions>
+                <MudText>Already have an account?</MudText>
+                <MudLink Href="/login" Underline="Underline.Always" Style="margin-left: 5px;">Login</MudLink>
+                <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary"
+                           Class="ml-auto">Register</MudButton>
+            </MudCardActions>
+        </MudCard>
+    </EditForm>
+</div>
+
+@code {
+    [CascadingParameter] public GlobalAppState State { get; set; }
+    [Inject] NavigationManager NavigationManager { get; set; }
+
+    bool IsShown = false;
+    string ErrorMessage = "";
+    LoginRequest model = new LoginRequest();
+
+    public void CloseMe()
+    {
+        IsShown = false;
+    }
+
+    private async Task OnValidSubmit(EditContext context)
+    {
+       
+
+        try
+        {
+            var http = State.CreateClient();
+            var response = await http.PostAsJsonAsync("/Authentication/register", model);
+            if (response.IsSuccessStatusCode)
+            {
+                NavigationManager.NavigateTo("/login");
+            }
+            else
+            {
+                // It's a good idea to handle different status codes and errors appropriately
+                ErrorMessage = "Failed to register. Please try again.";
+                IsShown = true;
+            }
+        }
+        catch (HttpRequestException ex)
+        {
+            ErrorMessage = $"HTTP Request failed: {ex.Message}";
+            IsShown = true;
+        }
+    }
+}

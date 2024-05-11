@@ -1,0 +1,46 @@
+﻿
+
+﻿<EditForm Model="@Customer" OnValidSubmit="OnValidSubmit">
+    <DataAnnotationsValidator />
+    <MudDialog>
+        <DialogContent>
+            <MudTextField Label="Customer Name" @bind-Value="Customer.CustomerName" For="(() => Customer.CustomerName)" />
+            <MudDatePicker Label="Date" Editable="true" @bind-Date="time" Mask="@(new DateMask("dd.MM.yyyy"))" DateFormat="dd.MM.yyyy" Required />
+            <MudTextField Label="Gender" @bind-Value="Customer.Gender" For="(() => Customer.Gender)" />
+
+        </DialogContent>
+        <DialogActions>
+            <MudButton OnClick="Cancel">Cancel</MudButton>
+            <MudButton Color="Color.Primary" ButtonType="ButtonType.Submit">Ok</MudButton>
+        </DialogActions>
+    </MudDialog>
+</EditForm>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    [CascadingParameter] GlobalAppState State { get; set; }
+    [Parameter] public CustomerRes Customer { set; get; }
+    DateTime? time = new DateTime();
+
+
+    void Cancel() => MudDialog.Cancel();
+    void Submit() => MudDialog.Close(() =>
+    {
+        DialogResult.Ok(true);
+    });
+
+    public async Task OnValidSubmit()
+    {
+        try
+        {
+            Customer.DateOfBirth = time ?? new DateTime();
+            var http = State.CreateClient();
+            var response = await http.PutAsJsonAsync($"/Customers/{Customer.CustomerNumber}", Customer);
+            Submit();
+        }
+        catch (HttpRequestException ex)
+        {
+            Console.WriteLine(ex);
+        }
+    }
+}

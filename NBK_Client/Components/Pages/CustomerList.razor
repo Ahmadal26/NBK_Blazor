@@ -1,0 +1,108 @@
+﻿@page "/"
+@using MudBlazor
+@inject IDialogService DialogService
+
+<MudPaper Class="pa-4">
+    <MudText Typo="Typo.h5">Customer List</MudText>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="OpenAddCustomerDialog">Add New Customer</MudButton>
+    <MudTable Items="@customers" Loading="@isLoading" Striped="true" Bordered="true" Hover="true">
+        <HeaderContent>
+            <MudTh>Customer Number</MudTh>
+            <MudTh>Customer Name</MudTh>
+            <MudTh>Date of Birth</MudTh>
+            <MudTh>Gender</MudTh>
+            <MudTh>Actions</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Customer Number">@context.CustomerNumber</MudTd>
+            <MudTd DataLabel="Customer Name">@context.CustomerName</MudTd>
+            <MudTd DataLabel="Date of Birth">@context.DateOfBirth.ToString("yyyy-MM-dd")</MudTd>
+            <MudTd DataLabel="Gender">@context.Gender</MudTd>
+            <MudTd>
+                <MudButton Color="Color.Primary" Size="Size.Small" OnClick="@( () => OpenUpdateCustomerDialog(context) )">Update</MudButton>
+                <MudButton Color="Color.Error" Size="Size.Small" OnClick="@( () => ConfirmDelete(context.CustomerNumber) )">Delete</MudButton>
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+    @if (isError)
+    {
+        <MudAlert Severity="Severity.Error">Error loading customer data. Please try again later.</MudAlert>
+    }
+</MudPaper>
+
+@code {
+    [CascadingParameter] GlobalAppState State { set; get; }
+    private List<CustomerRes> customers = new List<CustomerRes>();
+    private bool isLoading = true;
+    private bool isError = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await FetchCustomers();
+    }
+
+    private async Task FetchCustomers()
+    {
+        try
+        {
+            var Http = State.CreateClient();
+            customers = await Http.GetFromJsonAsync<List<CustomerRes>>("/customers");
+            isError = false;
+        }
+        catch (Exception)
+        {
+            isError = true;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task OpenAddCustomerDialog()
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+        var result = await DialogService.Show<AddCustomerDialog>("Add New Customer", options).Result;
+        if (!result.Canceled)
+        {
+            await FetchCustomers();
+        }
+    }
+
+    private async Task OpenUpdateCustomerDialog(CustomerRes customer)
+    {
+        var parameters = new DialogParameters { ["Customer"] = customer };
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+        var result = await DialogService.Show<UpdateCustomerDialog>("Update Customer", parameters, options).Result;
+        if (!result.Canceled)
+        {
+            await FetchCustomers();
+        }
+    }
+
+    private async Task ConfirmDelete(int customerNumber)
+    {
+        bool? result = await DialogService.ShowMessageBox(
+            "Confirm Delete",
+            $"Are you sure you want to delete customer {customerNumber}?",
+            yesText: "Delete", cancelText: "Cancel");
+        if (result == true)
+        {
+            await DeleteCustomer(customerNumber);
+        }
+    }
+
+    private async Task DeleteCustomer(int customerNumber)
+    {
+        var Http = State.CreateClient();
+        var response = await Http.DeleteAsync($"/customers/{customerNumber}");
+        if (response.IsSuccessStatusCode)
+        {
+            await FetchCustomers(); // Refresh the list after deletion
+        }
+        else
+        {
+            // Handle errors here, perhaps log or notify the user
+        }
+    }
+}
